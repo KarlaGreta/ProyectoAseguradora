@@ -1,0 +1,79 @@
+@page "/tercero/{Id:int?}"
+@inject NavigationManager Navegador;
+@inject AgregarTerceroUseCase AgregarTerceroUseCase
+@inject ModificarTerceroUseCase ModificarTerceroUseCase
+@inject ObtenerTerceroUseCase ObtenerTerceroUseCase
+
+<DialogoConfirmacion @ref="dialogo" OnConfirmado="seguir" />
+
+@if (_esNuevoTercero)
+{
+    <h3>Agregando un nuevo Tercero</h3>
+}
+else
+{
+    <h3>Modificando al Tercero "@_tercero.Id"</h3>
+}
+<div>los * son datos obligatorios</div>
+<div>*DNI: </div>
+<input placeholder="DNI" @bind="_tercero.DNI" class="form-control">
+<input placeholder="*Apellido" @bind="_tercero.Apellido" class="form-control">
+<input placeholder="*Nombres" @bind="_tercero.Nombre" class="form-control">
+<input placeholder="Telefono" @bind="_tercero.Telefono" class="form-control">
+<div>*Nombre de la Aseguradora: </div>
+<input placeholder="Aseguradora" @bind="_tercero.nombreAseguradora" class="form-control">
+<div>*id del siniestro: </div>
+<input placeholder="Id siniestro" @bind="_tercero.SiniestroId" class="form-control">
+<button class="btn btn-primary" @onclick="Aceptar">Aceptar</button>
+
+@code {
+    Tercero _tercero = new Tercero();
+
+    [Parameter] public int? Id { get; set; }
+    bool _esNuevoTercero = true;
+    protected override void OnParametersSet()
+    {
+        if (Id != null)
+        {
+            var tit_hallada = ObtenerTerceroUseCase.Ejecutar(Id.Value);
+            if (tit_hallada != null)
+            {
+                _tercero = tit_hallada;
+                _esNuevoTercero = false;
+            }
+        }
+    }
+
+    DialogoConfirmacion dialogo = null!;
+
+    void Aceptar()
+    {
+        try
+        {
+            if (_esNuevoTercero)
+            {
+                AgregarTerceroUseCase.Ejecutar(_tercero);
+            }
+            else
+            {
+                ModificarTerceroUseCase.Ejecutar(_tercero);
+            }
+            _tercero = new Tercero();
+            Navegador.NavigateTo("listadoterceros");
+        }
+        catch (Exception e)
+        {
+            dialogo.Mensaje = e.Message;
+            dialogo.Mostrar();
+        }
+    }
+    
+    private void seguir()
+    {
+        Navegador.NavigateTo("listadoterceros");
+    }
+}
+
+
+
+

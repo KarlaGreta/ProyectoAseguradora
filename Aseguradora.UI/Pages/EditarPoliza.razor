@@ -1,0 +1,78 @@
+@page "/poliza/{Id:int?}"
+@inject NavigationManager Navegador;
+@inject AgregarPolizaUseCase AgregarPolizaUseCase
+@inject ModificarPolizaUseCase ModificarPolizaUseCase
+@inject ObtenerPolizaUseCase ObtenerPolizaUseCase
+
+<DialogoConfirmacion @ref="dialogo" OnConfirmado="seguir" />
+
+@if (_esNuevaPoliza)
+{
+    <h3>Agregando un nuevo Poliza</h3>
+}
+else
+{
+    <h3>Modificando al Poliza "@_poliza.Id"</h3>
+}
+<div>los * son datos obligatorios</div>
+<div>*id del vehiculo </div>
+<input placeholder="VehiculoId" @bind="_poliza.VehiculoId" class="form-control">
+<div>*valor de la poliza </div>
+<input placeholder="valor" @bind="_poliza.valor" class="form-control">
+<input placeholder="franquicia" @bind="_poliza.franquicia" class="form-control">
+<input placeholder="cobertura" @bind="_poliza.cobertura" class="form-control">
+<div>Fechas: formato (dia/mes/año) </div>
+<input placeholder="*Inicio" @bind="_poliza.Inicio" class="form-control">
+<input placeholder="*Fin" @bind="_poliza.Fin" class="form-control">
+<button class="btn btn-primary" @onclick="Aceptar">Aceptar</button>
+
+@code {
+    Poliza _poliza = new Poliza();
+
+    [Parameter] public int? Id { get; set; }
+    bool _esNuevaPoliza = true;
+    protected override void OnParametersSet()
+    {
+        if (Id != null)
+        {
+            var pol_hallada = ObtenerPolizaUseCase.Ejecutar(Id.Value);
+            if (pol_hallada != null)
+            {
+                _poliza = pol_hallada;
+                _esNuevaPoliza = false;
+            }
+        }
+    }
+    DialogoConfirmacion dialogo = null!;
+
+    void Aceptar()
+    {
+        try
+        {
+            if (_esNuevaPoliza)
+            {
+                AgregarPolizaUseCase.Ejecutar(_poliza);
+            }
+            else
+            {
+                ModificarPolizaUseCase.Ejecutar(_poliza);
+            }
+            _poliza = new Poliza();
+            Navegador.NavigateTo("listadopolizas");
+        }
+        catch (Exception e)
+        {
+
+            dialogo.Mensaje = e.Message;
+
+            dialogo.Mostrar();
+
+        }
+
+    }
+    private void seguir()
+    {
+
+        Navegador.NavigateTo("listadopolizas");
+    }
+}

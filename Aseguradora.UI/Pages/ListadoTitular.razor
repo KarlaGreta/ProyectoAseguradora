@@ -1,0 +1,111 @@
+@page "/listadotitulares"
+@inject ListarTitularUseCase ListarTitularUseCase
+@inject ListarVehiculoUseCase ListarVehiculoUseCase
+@inject ListarPolizaUseCase ListarPolizaUseCase
+@inject ListarSiniestroUseCase ListarSiniestroUseCase
+@inject ListarTerceroUseCase ListarTerceroUseCase
+
+@inject EliminarTitularUseCase EliminarTitularUseCase
+@inject EliminarVehiculoUseCase EliminarVehiculoUseCase
+@inject EliminarPolizaUseCase EliminarPolizaUseCase
+@inject EliminarSiniestroUseCase EliminarSiniestroUseCase
+@inject EliminarTerceroUseCase EliminarTerceroUseCase
+
+@inject NavigationManager Navegador
+
+<DialogoConfirmacion @ref="dialogo" OnConfirmado="Eliminar" />
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>DNI</th>
+            <th>APELLIDO</th>
+            <th>NOMBRES</th>
+            <th>TELEFONO</th>
+            <th>EMAIL</th>
+            <th>DIRECCION</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in _lista)
+        {
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.DNI</td>
+                <td>@p.Apellido</td>
+                <td>@p.Nombre</td>
+                <td>@p.Telefono</td>
+                <td>@p.Email</td>
+                <td>@p.Direccion</td>
+                <td>
+                    <button class="btn btn-primary">
+                        <span class="oi oi-pencil" @onclick="()=>ModificarTitular(p)"></span>
+                    </button>
+
+                    <button class="btn btn-danger" @onclick="()=>ConfirmarEliminacion(p)">
+                        <span class="oi oi-trash"></span>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+@code {
+    List<Titular> _lista = new List<Titular>();
+    protected override void OnInitialized()
+    {
+        _lista = ListarTitularUseCase.Ejecutar();
+    }
+
+    void ModificarTitular(Titular p)
+    {
+        Navegador.NavigateTo($"titular/{p.Id}");
+    }
+
+    DialogoConfirmacion dialogo = null!;
+    Titular? _titularParaEliminar = null;
+
+    private void ConfirmarEliminacion(Titular p)
+    {
+        _titularParaEliminar = p;
+        dialogo.Mensaje = $"¿Desea eliminar el titular {p.Id} {p.Nombre}?";
+        dialogo.Mostrar();
+    }
+
+    private void Eliminar()
+    {
+        if (_titularParaEliminar != null)
+        {
+            EliminarTitularUseCase.Ejecutar(_titularParaEliminar.Id);
+            ListarVehiculoUseCase.Ejecutar().Where(x => x.TitularId == _titularParaEliminar.Id).ToList().ForEach(x =>
+            {
+                EliminarVehiculoUseCase.Ejecutar(x.Id);
+                var hay_poliza = ListarPolizaUseCase.Ejecutar().SingleOrDefault(pol => pol.VehiculoId == x.Id);
+                if (hay_poliza != null)
+                {
+                    EliminarPolizaUseCase.Ejecutar(hay_poliza.Id);
+
+                    ListarSiniestroUseCase.Ejecutar().Where(pol => pol.PolizaId == hay_poliza.Id).ToList().ForEach(hay_siniestro =>
+                    {
+                        EliminarSiniestroUseCase.Ejecutar(hay_siniestro.Id);
+
+                        var hay_tercero = ListarTerceroUseCase.Ejecutar().SingleOrDefault(pol => pol.SiniestroId == hay_siniestro.Id);
+                        if (hay_tercero != null)
+                        {
+                            EliminarTerceroUseCase.Ejecutar(hay_tercero.Id);
+                        }
+                    });
+
+                }
+            });
+        }
+        _lista = ListarTitularUseCase.Ejecutar(); //se actualiza la lista de titulares
+
+    }
+}
+
+

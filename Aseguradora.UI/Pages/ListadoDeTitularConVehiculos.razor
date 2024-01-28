@@ -1,0 +1,76 @@
+@page "/listadovehiculosconpolizas"
+@inject ListarTitularUseCase ListarTitularUseCase
+@inject ListarVehiculoUseCase ListarVehiculoUseCase
+@inject ListarPolizaUseCase ListarPolizaUseCase
+@inject ListarSiniestroUseCase ListarSiniestroUseCase
+@inject ListarTerceroUseCase ListarTerceroUseCase
+@inject ListarTitularesConSusVehiculosUseCase ListarTitularesConSusVehiculosUseCase
+
+@inject EliminarTitularUseCase EliminarTitularUseCase
+@inject EliminarVehiculoUseCase EliminarVehiculoUseCase
+@inject EliminarPolizaUseCase EliminarPolizaUseCase
+@inject EliminarSiniestroUseCase EliminarSiniestroUseCase
+@inject EliminarTerceroUseCase EliminarTerceroUseCase
+
+@inject NavigationManager Navegador
+
+
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>DNI</th>
+            <th>APELLIDO</th>
+            <th>NOMBRES</th>
+            <th>TELEFONO</th>
+            <th>EMAIL</th>
+            <th>DIRECCION</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in _lista)
+        {
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.DNI</td>
+                <td>@p.Apellido</td>
+                <td>@p.Nombre</td>
+                <td>@p.Telefono</td>
+                <td>@p.Email</td>
+                <td>@p.Direccion</td>
+
+            </tr>
+            <tr>
+                <td>VEHICULOS:</td>
+                @if (p.vehiculos != null)
+                {
+                    @foreach (var x in p.vehiculos)
+                    {
+                    <tr>
+                        <td>ID: @x.Id</td>
+                        <td>DOMINIO: @x.Dominio</td>
+                        <td>MARCA: @x.Marca</td>
+                        <td>AÑO @x.Anio</td>
+                        <br>
+                    </tr>
+                    }
+                }
+                
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+@code {
+    List<TitularVehiculos> _lista = new List<TitularVehiculos>();
+   
+    protected override void OnInitialized()
+    {
+        _lista = ListarTitularesConSusVehiculosUseCase.Ejecutar();
+    }
+
+    
+    
+}

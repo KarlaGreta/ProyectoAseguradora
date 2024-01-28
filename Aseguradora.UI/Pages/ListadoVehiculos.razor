@@ -1,0 +1,100 @@
+@page "/listadovehiculos"
+@inject ListarVehiculoUseCase ListarVehiculoUseCase
+@inject ListarPolizaUseCase ListarPolizaUseCase
+@inject ListarSiniestroUseCase ListarSiniestroUseCase
+@inject ListarTerceroUseCase ListarTerceroUseCase
+
+@inject EliminarVehiculoUseCase EliminarVehiculoUseCase
+@inject EliminarPolizaUseCase EliminarPolizaUseCase
+@inject EliminarSiniestroUseCase EliminarSiniestroUseCase
+@inject EliminarTerceroUseCase EliminarTerceroUseCase
+
+@inject NavigationManager Navegador
+
+<DialogoConfirmacion @ref="dialogo" OnConfirmado="Eliminar" />
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>DOMINIO</th>
+            <th>MARCA</th>
+            <th>AÑO</th>
+            <th>ID TITULAR</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in _lista)
+        {
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.Dominio</td>
+                <td>@p.Marca</td>
+                <td>@p.Anio</td>
+                <td>@p.TitularId</td>
+
+                <td>
+                    <button class="btn btn-primary">
+                        <span class="oi oi-pencil" @onclick="()=>ModificarVehiculo(p)"></span>
+                    </button>
+
+                    <button class="btn btn-danger" @onclick="()=>ConfirmarEliminacion(p)">
+                        <span class="oi oi-trash"></span>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+@code {
+    List<Vehiculo> _lista = new List<Vehiculo>();
+    protected override void OnInitialized()
+    {
+        _lista = ListarVehiculoUseCase.Ejecutar();
+    }
+
+    void ModificarVehiculo(Vehiculo p)
+    {
+        Navegador.NavigateTo($"vehiculo/{p.Id}");
+    }
+
+    DialogoConfirmacion dialogo = null!;
+    Vehiculo? _vehiculoParaEliminar = null;
+
+    private void ConfirmarEliminacion(Vehiculo p)
+    {
+        _vehiculoParaEliminar = p;
+        dialogo.Mensaje = $"¿Desea eliminar el vehiculo {p.Id} ?";
+        dialogo.Mostrar();
+    }
+
+    private void Eliminar()
+    {
+        if (_vehiculoParaEliminar != null)
+        {
+            EliminarVehiculoUseCase.Ejecutar(_vehiculoParaEliminar.Id);
+            var hay_poliza = ListarPolizaUseCase.Ejecutar().SingleOrDefault(pol => pol.VehiculoId == _vehiculoParaEliminar.Id);
+            if (hay_poliza != null)
+            {
+                EliminarPolizaUseCase.Ejecutar(hay_poliza.Id);
+
+                var hay_siniestro = ListarSiniestroUseCase.Ejecutar().SingleOrDefault(pol => pol.PolizaId == hay_poliza.Id);
+                if (hay_siniestro != null)
+                {
+
+                    EliminarSiniestroUseCase.Ejecutar(hay_siniestro.Id);
+
+                    var hay_tercero = ListarTerceroUseCase.Ejecutar().SingleOrDefault(pol => pol.SiniestroId == hay_siniestro.Id);
+                    if (hay_tercero != null)
+                    {
+                        EliminarTerceroUseCase.Ejecutar(hay_tercero.Id);
+                    }
+                }
+            }
+        }
+        _lista = ListarVehiculoUseCase.Ejecutar(); //se actualiza la lista de vehiculos
+
+    }
+}

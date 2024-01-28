@@ -1,0 +1,94 @@
+@page "/listadopolizas"
+@inject ListarPolizaUseCase ListarPolizaUseCase
+@inject ListarSiniestroUseCase ListarSiniestroUseCase
+@inject ListarTerceroUseCase ListarTerceroUseCase
+
+@inject EliminarPolizaUseCase EliminarPolizaUseCase
+@inject EliminarSiniestroUseCase EliminarSiniestroUseCase
+@inject EliminarTerceroUseCase EliminarTerceroUseCase
+
+@inject NavigationManager Navegador
+
+<DialogoConfirmacion @ref="dialogo" OnConfirmado="Eliminar" />
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>VEHICULO</th>
+            <th>VALOR</th>
+            <th>FRANQUICIA</th>
+            <th>COBERTURA</th>
+            <th>INICIO</th>
+            <th>FIN</th>
+            <th>ACCiON</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in _lista)
+        {
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.VehiculoId</td>
+                <td>@p.valor</td>
+                <td>@p.franquicia</td>
+                <td>@p.cobertura</td>
+                <td>@p.Inicio</td>
+                <td>@p.Fin</td>
+                <td>
+                    <button class="btn btn-primary">
+                        <span class="oi oi-pencil"  @onclick="()=>ModificarPoliza(p)"></span>
+                    </button>
+
+                    <button class="btn btn-danger" @onclick="()=>ConfirmarEliminacion(p)">
+                        <span class="oi oi-trash"></span>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+@code {
+    List<Poliza> _lista = new List<Poliza>();
+    protected override void OnInitialized()
+    {
+        _lista = ListarPolizaUseCase.Ejecutar();
+    }
+
+    void ModificarPoliza(Poliza p){
+        Navegador.NavigateTo($"poliza/{p.Id}");
+    }
+
+    DialogoConfirmacion dialogo = null!;
+    Poliza? _polizaParaEliminar = null;
+
+    private void ConfirmarEliminacion(Poliza p)
+    {
+        _polizaParaEliminar = p;
+        dialogo.Mensaje = $"¿Desea eliminar al cliente {p.Id} {p.VehiculoId}?";
+        dialogo.Mostrar();
+    }
+    
+    private void Eliminar()
+    {
+        if (_polizaParaEliminar != null)
+        {
+            EliminarPolizaUseCase.Ejecutar(_polizaParaEliminar.Id);
+
+                var hay_siniestro=ListarSiniestroUseCase.Ejecutar().SingleOrDefault(pol=> pol.PolizaId==_polizaParaEliminar.Id);
+                if (hay_siniestro != null){
+
+                        EliminarSiniestroUseCase.Ejecutar(hay_siniestro.Id);
+
+                        var hay_tercero=ListarTerceroUseCase.Ejecutar().SingleOrDefault(pol=> pol.SiniestroId==hay_siniestro.Id);
+                        if (hay_tercero != null){
+                            EliminarTerceroUseCase.Ejecutar(hay_tercero.Id);
+                        }
+                }
+         }
+        _lista = ListarPolizaUseCase.Ejecutar(); //se actualiza la lista de clientes
+
+     }
+}

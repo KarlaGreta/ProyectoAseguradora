@@ -1,0 +1,83 @@
+@page "/vehiculo/{Id:int?}"
+@inject NavigationManager Navegador;
+@inject AgregarVehiculoUseCase AgregarVehiculoUseCase
+@inject ModificarVehiculoUseCase ModificarVehiculoUseCase
+@inject ObtenerVehiculoUseCase ObtenerVehiculoUseCase
+@inject ListarTitularUseCase ListarTitularUseCase
+<DialogoConfirmacion @ref="dialogo" OnConfirmado="seguir" />
+
+
+@if (_esNuevoVehiculo)
+{
+    <h3>Agregando un nuevo Vehiculo</h3>
+}
+else
+{
+    <h3>Modificando al Vehiculo "@_vehiculo.Id"</h3>
+}
+<div>los * son datos obligatorios</div>
+<input placeholder="*Dominio" @bind="_vehiculo.Dominio" class="form-control">
+<input placeholder="Marca" @bind="_vehiculo.Marca" class="form-control">
+<div>*AÑO</div>
+<input placeholder="*Año" @bind="_vehiculo.Anio" class="form-control">
+<div>*DNI DEL TTULAR</div>
+<input placeholder="*DNItitular" @bind="dni_titular" class="form-control">
+ <button class="btn btn-primary" @onclick="Aceptar">Aceptar</button> 
+
+@code {
+    Vehiculo _vehiculo = new Vehiculo();
+    int dni_titular;
+
+    [Parameter] public int? Id { get; set; }
+    bool _esNuevoVehiculo = true;
+    protected override void OnParametersSet()
+    {
+        if (Id != null)
+        {
+            var tit_hallada = ObtenerVehiculoUseCase.Ejecutar(Id.Value);
+            if (tit_hallada != null)
+            {
+                _vehiculo = tit_hallada;
+                _esNuevoVehiculo = false;
+            }
+        }
+    }
+
+
+
+    DialogoConfirmacion dialogo = null!;
+    void Aceptar()
+    {
+        try
+        {
+            if (_esNuevoVehiculo)
+            {
+                var titular = ListarTitularUseCase.Ejecutar().SingleOrDefault(x => x.DNI == dni_titular);
+                if (titular != null)
+                {
+                    _vehiculo.TitularId = titular.Id;
+                    AgregarVehiculoUseCase.Ejecutar(_vehiculo);
+                }else throw new Exception($"el titular de {dni_titular} no existe");
+
+            }
+            else
+            {
+                ModificarVehiculoUseCase.Ejecutar(_vehiculo);
+            }
+            _vehiculo = new Vehiculo();
+            Navegador.NavigateTo("listadovehiculos");
+        }
+        catch (Exception e)
+        {
+            dialogo.Mensaje = e.Message;
+            dialogo.Mostrar();
+        }
+    }
+
+
+    private void seguir()
+    {
+        Navegador.NavigateTo("listadovehiculos");
+    }
+
+}

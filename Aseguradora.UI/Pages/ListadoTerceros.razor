@@ -1,0 +1,81 @@
+@page "/listadoterceros"
+
+
+@inject ListarTerceroUseCase ListarTerceroUseCase
+
+
+@inject EliminarTerceroUseCase EliminarTerceroUseCase
+
+@inject NavigationManager Navegador
+
+<DialogoConfirmacion @ref="dialogo" OnConfirmado="Eliminar" />
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>DNI</th>
+            <th>APELLIDO</th>
+            <th>NOMBRES</th>
+            <th>TELEFONO</th>
+            <th>NOMBRE ASEGURADORA</th>
+            <th>ID SINIESTRO</th>
+
+            <th>ACCiON</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var p in _lista)
+        {
+            <tr>
+                <td>@p.Id</td>
+                <td>@p.DNI</td>
+                <td>@p.Apellido</td>
+                <td>@p.Nombre</td>
+                <td>@p.Telefono</td>
+                <td>@p.nombreAseguradora</td>
+                <td>@p.SiniestroId</td>
+                <td>
+                    <button class="btn btn-primary">
+                        <span class="oi oi-pencil"  @onclick="()=>ModificarTercero(p)"></span>
+                    </button>
+
+                    <button class="btn btn-danger" @onclick="()=>ConfirmarEliminacion(p)">
+                        <span class="oi oi-trash"></span>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+
+</table>
+
+@code {
+    List<Tercero> _lista = new List<Tercero>();
+    protected override void OnInitialized()
+    {
+        _lista = ListarTerceroUseCase.Ejecutar();
+    }
+
+    void ModificarTercero(Tercero p){
+        Navegador.NavigateTo($"tercero/{p.Id}");
+    }
+
+    DialogoConfirmacion dialogo = null!;
+    Tercero? _terceroParaEliminar = null;
+    private void ConfirmarEliminacion(Tercero p)
+    {
+        _terceroParaEliminar = p;
+        dialogo.Mensaje = $"¿Desea eliminar el tercero {p.Id}?";
+        dialogo.Mostrar();
+    }
+    private void Eliminar()
+    {
+            if (_terceroParaEliminar != null){
+                EliminarTerceroUseCase.Ejecutar(_terceroParaEliminar.Id);
+            }
+                
+        _lista = ListarTerceroUseCase.Ejecutar(); //se actualiza la lista de clientes
+        
+     }
+}

@@ -1,0 +1,77 @@
+@page "/siniestro/{Id:int?}"
+@inject NavigationManager Navegador;
+@inject AgregarSiniestroUseCase AgregarSiniestroUseCase
+@inject ModificarSiniestroUseCase ModificarSiniestroUseCase
+@inject ObtenerSiniestroUseCase ObtenerSiniestroUseCase
+
+<DialogoConfirmacion @ref="dialogo" OnConfirmado="seguir" />
+
+@if (_esNuevoSiniestro)
+{
+    <h3>Agregando un nuevo Siniestro</h3>
+}
+else
+{
+    <h3>Modificando al Siniestro "@_siniestro.Id"</h3>
+}
+<div>los * son datos obligatorios</div>
+<div>*id de la Poliza </div>
+<input placeholder="PolizaId" @bind="_siniestro.PolizaId" class="form-control">
+<input placeholder="ocurrencia" @bind="_siniestro.ocurrencia" class="form-control">
+<input placeholder="direccion" @bind="_siniestro.direccion" class="form-control">
+<input placeholder="descripcion" @bind="_siniestro.descripcion" class="form-control">
+<button class="btn btn-primary" @onclick="Aceptar">Aceptar</button>
+
+@code {
+    Siniestro _siniestro = new Siniestro();
+
+
+    [Parameter] public int? Id { get; set; }
+    bool _esNuevoSiniestro = true;
+    protected override void OnParametersSet()
+    {
+        if (Id != null)
+        {
+            var tit_hallada = ObtenerSiniestroUseCase.Ejecutar(Id.Value);
+            if (tit_hallada != null)
+            {
+                _siniestro = tit_hallada;
+                _esNuevoSiniestro = false;
+            }
+        }
+    }
+    DialogoConfirmacion dialogo = null!;
+    void Aceptar()
+    {
+        try
+        {
+            if (_esNuevoSiniestro)
+            {
+                _siniestro.ingreso = DateTime.Now;
+                AgregarSiniestroUseCase.Ejecutar(_siniestro);
+            }
+            else
+            {
+                ModificarSiniestroUseCase.Ejecutar(_siniestro);
+            }
+            _siniestro = new Siniestro();
+            Navegador.NavigateTo("listadosiniestros");
+        }
+        catch (Exception e)
+        {
+
+            dialogo.Mensaje = e.Message;
+
+            dialogo.Mostrar();
+
+        }
+
+
+
+    }
+    private void seguir()
+    {
+
+        Navegador.NavigateTo("listadosiniestros");
+    }
+}
